@@ -15,8 +15,6 @@ domain_name_map = {
 # 默认dns服务器，非指定解析映射表内的直接转发给默认dns服务器
 default_dns_server = "192.168.1.1"
 
-
-
 # Create a rotating file handler with a maximum size of 10MB
 handler = RotatingFileHandler('dns.log', maxBytes=10*1024*1024, backupCount=10)
 
@@ -40,7 +38,6 @@ logger.addHandler(handler)
 logger.addHandler(stream_handler)
 
 
-
 def dns_server():
     # Create a UDP socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -48,12 +45,19 @@ def dns_server():
     # Bind the socket to a specific IP address and port
     server_address = (bind_server, 53)  # DNS server listens on port 53
     server_socket.bind(server_address)
-    
+
+    server_socket.settimeout(60)
+
     logger.info('DNS server is running...')
     while True:
-        # Receive DNS query packet and client address
-        dns_query, client_address = server_socket.recvfrom(1024)
-        
+        try:
+            # Receive DNS query packet and client address
+            dns_query, client_address = server_socket.recvfrom(1024)
+
+        except socket.timeout:
+            logger.warning('DNS server timed out')
+            continue
+
         # Extract the domain name from the DNS query
         domain_name = extract_domain_name(dns_query)
         
@@ -71,6 +75,7 @@ def dns_server():
             forward_dns_query(dns_query, gateway_dns_server_address, client_address, server_socket)
             logger.info(f'Sending DNS response for {domain_name} to {client_address[0]}')
 
+
 def extract_domain_name(dns_query):
     domain_name = ''
     domain_length = dns_query[12]  # Length of the domain name
@@ -83,6 +88,7 @@ def extract_domain_name(dns_query):
         domain_length = dns_query[pointer]
     
     return domain_name[:-1]  # Remove the trailing '.'
+
 
 def build_dns_response(dns_query, domain_name, ip_address):
     dns_response = dns_query[:2] + b'\x81\x80'  # Transaction ID and Flags
@@ -102,6 +108,7 @@ def build_dns_response(dns_query, domain_name, ip_address):
     
     return dns_response
 
+
 def forward_dns_query(dns_query, gateway_dns_server_address, client_address, server_socket):
     # Create a socket to communicate with gateway DNS server
     gateway_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -116,5 +123,6 @@ def forward_dns_query(dns_query, gateway_dns_server_address, client_address, ser
     server_socket.sendto(dns_response, client_address)
     
     gateway_socket.close()
+
 
 dns_server()
