@@ -55,7 +55,7 @@ def dns_server():
             dns_query, client_address = server_socket.recvfrom(1024)
 
         except socket.timeout:
-            logger.warning('DNS server timed out')
+            logger.warning('Simple DNS server timed out')
             continue
 
         # Extract the domain name from the DNS query
@@ -113,11 +113,17 @@ def forward_dns_query(dns_query, gateway_dns_server_address, client_address, ser
     # Create a socket to communicate with gateway DNS server
     gateway_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     
+    gateway_socket.settimeout(20)
+
     # Forward the DNS query to the gateway DNS server
     gateway_socket.sendto(dns_query, gateway_dns_server_address)
     
-    # Wait for the DNS response from the gateway DNS server
-    dns_response, _ = gateway_socket.recvfrom(1024)
+    try:
+        # Wait for the DNS response from the gateway DNS server
+        dns_response, _ = gateway_socket.recvfrom(1024)
+    except socket.timeout:
+        logger.warning('Gateway DNS server timed out')
+        return
     
     # Send the DNS response back to the client
     server_socket.sendto(dns_response, client_address)
