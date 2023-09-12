@@ -15,7 +15,7 @@ Type=simple
 User=root
 WorkingDirectory=/home/nano/Project/SimpleDns
 ExecStart=/usr/bin/python3 main.py
-Restart= always
+Restart=always
 RestartSec=1min
 
 [Install]
@@ -23,7 +23,7 @@ WantedBy=multi-user.target
 ```
 开启自启动
 ```bash
-#启动natServer
+#启动
 systemctl daemon-reload
 systemctl start simpleDns.service
 #设置为开机启动
