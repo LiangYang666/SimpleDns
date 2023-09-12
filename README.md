@@ -25,7 +25,7 @@ WantedBy=multi-user.target
 ```bash
 #启动natServer
 systemctl daemon-reload
-systemctl start natServer
+systemctl start simpleDns.service
 #设置为开机启动
-systemctl enable natServer
+systemctl enable simpleDns.service
 ```
